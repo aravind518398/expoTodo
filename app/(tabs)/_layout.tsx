@@ -1,45 +1,69 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-import { Platform } from 'react-native';
+import BlurLayer from "@/components/ui/BlurLayer";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Tabs } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
 
-import { HapticTab } from '@/components/HapticTab';
-import { IconSymbol } from '@/components/ui/IconSymbol';
-import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
-import { useColorScheme } from '@/hooks/useColorScheme';
-
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+export default function RootLayout() {
+  const today = new Date().getDate();
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        headerShown: false,
-        tabBarButton: HapticTab,
-        tabBarBackground: TabBarBackground,
-        tabBarStyle: Platform.select({
-          ios: {
-            // Use a transparent background on iOS to show the blur effect
-            position: 'absolute',
+    <>
+      <Tabs
+        screenOptions={{
+          
+          headerTintColor: "#f1f1f1",
+          headerTransparent: true,
+          headerBackground: () => <BlurLayer />,
+          headerShadowVisible: false,
+          tabBarBackground: () => <BlurLayer />,
+          tabBarStyle: {
+            backgroundColor: "transparent",
+            position: "absolute",
+            borderTopWidth: 0,
           },
-          default: {},
-        }),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          tabBarActiveTintColor: "#009075",
         }}
-      />
-      <Tabs.Screen
-        name="explore"
-        options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            headerTitle:"Today",
+            tabBarLabel: "Today",
+            tabBarIcon: ({ color, size }) => (
+              <View style={{ width: size, height: size }}>
+                <MaterialIcons
+                  name="calendar-today"
+                  size={size}
+                  color={color}
+                />
+                <Text style={[styles.dateOverlay, { color }]}>{today}</Text>
+              </View>
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="upcoming"
+          options={{
+            headerTitle:"Upcoming",
+            tabBarLabel: "Upcoming",
+            tabBarIcon: ({ color, size }) => (
+              <MaterialIcons name="date-range" size={size} color={color} />
+            ),
+          }}
+        />
+      </Tabs>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  dateOverlay: {
+    position: "absolute",
+    top: 8,
+    left: 0,
+    right: 0,
+    textAlign: "center",
+    fontSize: 11,
+    fontWeight: "bold",
+  },
+});
