@@ -26,6 +26,7 @@ export default function RootLayout() {
         <Tabs.Screen
           name="index"
           options={{
+            headerTintColor:"#f0f0f0",
             headerTitle:"Today",
             tabBarLabel: "Today",
             tabBarIcon: ({ color, size }) => (
