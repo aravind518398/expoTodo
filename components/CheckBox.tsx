@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import { Audio } from "expo-av";  
 import React, { useEffect, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, Vibration, View } from "react-native";
 
 type Props = {
   label: string;
@@ -10,12 +10,12 @@ type Props = {
 };
 
 export default function CheckBox({ label, checked, onChange }: Props) {
-  const soundRef = useRef<any>(null);
+  const soundRef = useRef<Audio.Sound | null>(null);
 
   useEffect(() => {
     const loadSound = async () => {
       const { sound } = await Audio.Sound.createAsync(
-        require("@/assets/lg_dewdrop.mp3")
+        require("@/assets/pop.mp3")
       );
       soundRef.current = sound;
     };
@@ -32,25 +32,21 @@ export default function CheckBox({ label, checked, onChange }: Props) {
   useEffect(() => {
     if (checked && soundRef.current) {
       soundRef.current.replayAsync();
+      // setTimeout(() => {
+      //   Vibration.vibrate(10);
+      // });
     }
   }, [checked]);
 
   return (
-    <>
-    <View style={styles.hr} >
-
-   
-      <TouchableOpacity
-        style={styles.container}
-        onPress={() => onChange(!checked)}
-      >
+    <View style={styles.hr}>
+      <TouchableOpacity style={styles.container} onPress={() => onChange(!checked)}>
         <View style={[styles.box, checked && styles.checkedBox]}>
           {checked && <MaterialIcons name="check" size={16} color="#fff" />}
         </View>
         <Text style={styles.label}>{label}</Text>
       </TouchableOpacity>
-       </View>
-    </>
+    </View>
   );
 }
 
@@ -82,5 +78,6 @@ const styles = StyleSheet.create({
   hr: {
     borderBottomColor: "rgba(245,245,245,0.2)",
     borderBottomWidth: 0.2,
+    paddingVertical: 10,
   },
 });

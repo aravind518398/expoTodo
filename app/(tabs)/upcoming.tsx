@@ -11,10 +11,11 @@ export default function Upcoming() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-justifyContent:"center",
+    justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#050505",
-  },text:{
-    color: "#fff"
-  }
+  },
+  text: {
+    color: "#fff",
+  },
 });

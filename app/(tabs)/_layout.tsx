@@ -9,7 +9,6 @@ export default function RootLayout() {
     <>
       <Tabs
         screenOptions={{
-          
           headerTintColor: "#f1f1f1",
           headerTransparent: true,
           headerBackground: () => <BlurLayer />,
@@ -26,8 +25,8 @@ export default function RootLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            headerTintColor:"#f0f0f0",
-            headerTitle:"Today",
+            headerTintColor: "#f0f0f0",
+            headerTitle: "Today",
             tabBarLabel: "Today",
             tabBarIcon: ({ color, size }) => (
               <View style={{ width: size, height: size }}>
@@ -45,7 +44,7 @@ export default function RootLayout() {
         <Tabs.Screen
           name="upcoming"
           options={{
-            headerTitle:"Upcoming",
+            headerTitle: "Upcoming",
             tabBarLabel: "Upcoming",
             tabBarIcon: ({ color, size }) => (
               <MaterialIcons name="date-range" size={size} color={color} />

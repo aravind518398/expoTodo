@@ -1,72 +1,117 @@
 import AddTodo from "@/components/AddTodo";
-import CircleButton from "@/components/CircleButton";
 import CheckBox from "@/components/CheckBox";
+import CircleButton from "@/components/CircleButton";
+import axios from "axios";
 import { useEffect, useState } from "react";
-import { SafeAreaView, StyleSheet, Text, View, ScrollView } from "react-native";
+import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 
 export default function Index() {
+
+  type TodoDocument = {
+  _id: string;
+  task: string;
+};
   const date = new Date().getDate();
   const [month, setMonth] = useState<string>("");
   const [day, setDay] = useState<string>("");
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [text, setText] = useState("");
+  const [text, setText] = useState<string>("");
+  const [document, setDocument] = useState<TodoDocument[]>([])
+  const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>(
+    {}
+  );
 
-  const checkboxData = [
-    { id: 1, label: "React Native" },
-    { id: 2, label: "Expo" },
-    { id: 3, label: "JavaScript" },
-    { id: 4, label: "TypeScript" },
-    { id: 5, label: "MongoDB" },
-    { id: 6, label: "Node.js" },
-    { id: 7, label: "Express.js" },
-  ];
+ const handleSubmit = async() => {
+  setModalVisible(false);
+  
+     try{
+      await axios.post('http://192.168.1.46:3000/data', {
+        
+        task:text
+      }).then((res)=> {
+        console.log(res.data) 
+        handleDocument();
+      })
 
-  const [checkedItems, setCheckedItems] = useState<{ [key: number]: boolean }>({});
+     }catch(error) {
+          console.log("Posing Error:", error)
+     }
+ }
 
-  const handleCheckChange = (id: number, checked: boolean) => {
+const handleDocument = async() => {
+  console.log("Document Details:")
+  try { 
+    await axios.get<TodoDocument[]>('http://192.168.1.46:3000/data').then((res) => {
+      console.log(res.data);
+      setDocument(res.data);
+    })
+  } catch(error) {
+    console.log("Document Fetching Error:" ,error)
+  }
+}
+useEffect(()=> {
+handleDocument();
+},[])
+
+
+  
+
+  const handleCheckChange = async (_id: string, checked: boolean) => {
     setCheckedItems((prev) => ({
       ...prev,
-      [id]: checked,
+      [_id]: checked,
     }));
   };
 
   useEffect(() => {
     const monthIndex = new Date().getMonth();
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
     setMonth(months[monthIndex]);
 
     const dayIndex = new Date().getDay();
     const days = [
-      "Sunday", "Monday", "Tuesday", "Wednesday",
-      "Thursday", "Friday", "Saturday",
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
     ];
     setDay(days[dayIndex]);
   }, []);
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.text}>
-        {date} {month} • {day}
-      </Text>
-
-      <View style={styles.hr} />
+      <View style={styles.hr}>
+        <Text style={styles.text}>
+          {date} {month} • {day}
+        </Text>
+      </View>
 
       <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {checkboxData.map((item) => (
+        {document?.map((item) => (
           <CheckBox
-            key={item.id}
-            label={item.label}
-            checked={!!checkedItems[item.id]}
-            onChange={(checked) => handleCheckChange(item.id, checked)}
+            key={item._id}
+            label={item.task}
+            checked={!!checkedItems[item._id]}
+            onChange={(checked) => handleCheckChange(item._id, checked)}
           />
         ))}
       </ScrollView>
-
-    
-      
 
       <View style={styles.circleBtn}>
         <CircleButton onPress={() => setModalVisible(true)} />
@@ -74,8 +119,11 @@ export default function Index() {
 
       <AddTodo
         isVisible={modalVisible}
-        onPress={() => setModalVisible(false)}
+        onPress={() => {
+          return setModalVisible(false);
+        }}
         setText={(value) => setText(value)}
+        onClick = {()=> handleSubmit()}
       />
     </SafeAreaView>
   );
