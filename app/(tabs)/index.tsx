@@ -1,66 +1,118 @@
 import AddTodo from "@/components/AddTodo";
 import CheckBox from "@/components/CheckBox";
 import CircleButton from "@/components/CircleButton";
-import axios from "axios";
+import BackgroundImage from "@/components/ui/BackgroundImage";
+import Undo from "@/components/Undo";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
-
 export default function Index() {
-
-  type TodoDocument = {
-  _id: string;
-  task: string;
-};
+  type TodoItem = {
+    id: number;
+    task: string;
+  };
   const date = new Date().getDate();
   const [month, setMonth] = useState<string>("");
   const [day, setDay] = useState<string>("");
   const [modalVisible, setModalVisible] = useState<boolean>(false);
-  const [text, setText] = useState<string>("");
-  const [document, setDocument] = useState<TodoDocument[]>([])
+  const [task, setTask] = useState<string>("");
+  const [document, setDocument] = useState<TodoItem[]>([]);
   const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>(
     {}
   );
+  const [lastDeleted, setLastDeleted] = useState<TodoItem | null>(null);
 
- const handleSubmit = async() => {
-  setModalVisible(false);
-  
-     try{
-      await axios.post('http://192.168.1.46:3000/data', {
-        
-        task:text
-      }).then((res)=> {
-        console.log(res.data) 
-        handleDocument();
-      })
+  // Save task
+  const saveTask = async () => {
+    const trimmedTask = task.trim();
+    if (!trimmedTask) return;
 
-     }catch(error) {
-          console.log("Posing Error:", error)
-     }
- }
+    try {
+      const existing = await AsyncStorage.getItem("tasks");
+      const tasks = existing ? JSON.parse(existing) : [];
+      const newTask = { id: Date.now(), task: trimmedTask };
+      const updatedTasks = [...tasks, newTask];
+      await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+      setDocument(updatedTasks);
+      setTask("");
+      setModalVisible(false);
+    } catch (e) {
+      console.log("Saving error", e);
+    }
+  };
 
-const handleDocument = async() => {
-  console.log("Document Details:")
-  try { 
-    await axios.get<TodoDocument[]>('http://192.168.1.46:3000/data').then((res) => {
-      console.log(res.data);
-      setDocument(res.data);
-    })
-  } catch(error) {
-    console.log("Document Fetching Error:" ,error)
-  }
-}
-useEffect(()=> {
-handleDocument();
-},[])
+  // Load task
+  const loadTasks = async () => {
+    try {
+      const stored = await AsyncStorage.getItem("tasks");
+      if (stored) {
+        const tasks = JSON.parse(stored);
+        setDocument(tasks);
+      }
+    } catch (e) {
+      console.log("Loading error", e);
+    }
+  };
+  // Delete  task
+  const deleteTask = async (id: number) => {
+    try {
+      const stored = await AsyncStorage.getItem("tasks");
+      let tasks = stored ? JSON.parse(stored) : [];
+      const taskToDelete = tasks.find((t: TodoItem) => t.id === id);
+      tasks = tasks.filter((t: TodoItem) => t.id !== id);
+      await AsyncStorage.setItem("tasks", JSON.stringify(tasks));
+      setDocument(tasks);
+      if (taskToDelete) {
+        setLastDeleted(taskToDelete);
+      }
+    } catch (e) {
+      console.log("Delete error", e);
+    }
+  };
 
+  const handleUndo = async () => {
+    if (lastDeleted) {
+      const updated = [...document, lastDeleted];
+      await AsyncStorage.setItem("tasks", JSON.stringify(updated));
+      setDocument(updated);
 
-  
+      setCheckedItems((prev) => {
+        const updatedChecked = { ...prev };
+        setTimeout(() => {
+          delete updatedChecked[lastDeleted.id];
+          
+        }, 3000);
 
-  const handleCheckChange = async (_id: string, checked: boolean) => {
+        return updatedChecked;
+      });
+
+      setLastDeleted(null);
+    }
+  };
+
+  const handleCheckChange = async (id: number, checked: boolean) => {
     setCheckedItems((prev) => ({
       ...prev,
-      [_id]: checked,
+      [id]: checked,
+      
     }));
+
+
+    if (checked) {
+      setTimeout(() => {
+        deleteTask(id);
+        
+      }, 600);
+
+      setTimeout(() => {
+        setCheckedItems((prev) => ({
+          ...prev,
+          [id]: false,
+         
+        }));
+      }, 3000);
+    }
+    
   };
 
   useEffect(() => {
@@ -92,6 +144,8 @@ handleDocument();
       "Saturday",
     ];
     setDay(days[dayIndex]);
+
+    loadTasks();
   }, []);
 
   return (
@@ -102,17 +156,20 @@ handleDocument();
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        {document?.map((item) => (
-          <CheckBox
-            key={item._id}
-            label={item.task}
-            checked={!!checkedItems[item._id]}
-            onChange={(checked) => handleCheckChange(item._id, checked)}
-          />
-        ))}
-      </ScrollView>
-
+      {Array.isArray(document) && document.length > 0 ? (
+        <ScrollView contentContainerStyle={{ padding: 16 }}>
+          {document.map((item) => (
+            <CheckBox
+              key={item.id.toString()}
+              label={item.task}
+              checked={!!checkedItems[item.id]}
+              onChange={(checked) => handleCheckChange(item.id, checked)}
+            />
+          ))}
+        </ScrollView>
+      ) : (
+        <BackgroundImage />
+      )}
       <View style={styles.circleBtn}>
         <CircleButton onPress={() => setModalVisible(true)} />
       </View>
@@ -122,9 +179,12 @@ handleDocument();
         onPress={() => {
           return setModalVisible(false);
         }}
-        setText={(value) => setText(value)}
-        onClick = {()=> handleSubmit()}
+        setText={(value) => setTask(value)}
+        onClick={() => saveTask()}
       />
+      {Object.values(checkedItems).some((value) => value) && (
+        <Undo onPress={handleUndo} />
+      )}
     </SafeAreaView>
   );
 }

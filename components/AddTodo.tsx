@@ -53,7 +53,7 @@ export default function AddTodo({ isVisible, onPress, setText, onClick }: Props)
               keyboardType="twitter"
               keyboardAppearance="dark"
               returnKeyType="next"
-              onChangeText={(value) => setText(value)}
+              onChangeText={(value) =>setText(value)}
               selectionColor="#009075"
               autoFocus
               style={styles.textField}

@@ -4,7 +4,7 @@ import { StyleSheet } from "react-native";
 export default function BlurLayer() {
   return (
     <BlurView
-      tint="dark" // You can also try "light" or "default"
+      tint="dark" 
       intensity={100}
       style={StyleSheet.absoluteFill}
     />

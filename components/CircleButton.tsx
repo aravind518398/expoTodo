@@ -1,6 +1,7 @@
 import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
+
 type Props = {
   onPress: () => void;
 };
@@ -8,11 +9,13 @@ type Props = {
 export default function CircleButton({ onPress }: Props) {
   return (
     <View>
+   
       <TouchableOpacity onPress={onPress}>
         <View style={styles.button}>
           <Ionicons name="add-sharp" color="#fff" size={24} />
         </View>
       </TouchableOpacity>
+      
     </View>
   );
 }

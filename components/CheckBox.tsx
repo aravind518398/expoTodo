@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { Audio } from "expo-av";  
 import React, { useEffect, useRef } from "react";
-import { StyleSheet, Text, TouchableOpacity, Vibration, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 type Props = {
   label: string;
@@ -32,9 +32,7 @@ export default function CheckBox({ label, checked, onChange }: Props) {
   useEffect(() => {
     if (checked && soundRef.current) {
       soundRef.current.replayAsync();
-      // setTimeout(() => {
-      //   Vibration.vibrate(10);
-      // });
+      
     }
   }, [checked]);
 
