@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Modal, StyleSheet, Text, TouchableOpacity } from "react-native";
-
+import { Audio } from "expo-av";
 import * as Animatable from "react-native-animatable";
 import { useEffect, useRef, useState } from "react";
 
@@ -12,6 +12,28 @@ type Props = {
 
 
 export default function Undo({onPress}:Props) {
+    const soundRef = useRef<Audio.Sound | null>(null);
+
+  useEffect(() => {
+  const loadSound = async () => {
+    const { sound } = await Audio.Sound.createAsync(
+      require("@/assets/shik.mp3")
+    );
+    soundRef.current = sound;
+  };
+
+  loadSound();
+
+  return () => {
+    if (soundRef.current) {
+      soundRef.current.unloadAsync();
+    }
+  };
+}, []);
+
+
+
+
   const viewRef = useRef(null);
   const [visible, setVisible] = useState(true);
 
@@ -46,7 +68,15 @@ export default function Undo({onPress}:Props) {
           color="#009075"
           size={24}
         />
-        <TouchableOpacity onPress={onPress}>
+        <TouchableOpacity   onPress={onPress}   onPressIn={async () => {
+    if (soundRef.current) {
+      try {
+        await soundRef.current.replayAsync();
+      } catch (error) {
+        console.error("Sound play error:", error);
+      }
+    }
+  }}  >
 <Text style={styles.bold}>Undo</Text>
         <Text style={styles.text}>Completed</Text>
         </TouchableOpacity>

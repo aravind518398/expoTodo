@@ -4,9 +4,18 @@ import CircleButton from "@/components/CircleButton";
 import BackgroundImage from "@/components/ui/BackgroundImage";
 import Undo from "@/components/Undo";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, View } from "react-native";
 export default function Index() {
+
+
+  useEffect(() => {
+  return () => {
+    
+    Object.values(deleteTimeouts.current).forEach(clearTimeout);
+  };
+}, []);
+
   type TodoItem = {
     id: number;
     task: string;
@@ -17,10 +26,11 @@ export default function Index() {
   const [modalVisible, setModalVisible] = useState<boolean>(false);
   const [task, setTask] = useState<string>("");
   const [document, setDocument] = useState<TodoItem[]>([]);
-  const [checkedItems, setCheckedItems] = useState<{ [key: string]: boolean }>(
-    {}
-  );
+const [checkedItems, setCheckedItems] = useState<Record<number, boolean>>({});
+
   const [lastDeleted, setLastDeleted] = useState<TodoItem | null>(null);
+
+const deleteTimeouts = useRef<{ [key: number]: number }>({});
 
   // Save task
   const saveTask = async () => {
@@ -29,7 +39,7 @@ export default function Index() {
 
     try {
       const existing = await AsyncStorage.getItem("tasks");
-      const tasks = existing ? JSON.parse(existing) : [];
+      let tasks = existing ? JSON.parse(existing) : [];
       const newTask = { id: Date.now(), task: trimmedTask };
       const updatedTasks = [...tasks, newTask];
       await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
@@ -55,64 +65,77 @@ export default function Index() {
   };
   // Delete  task
   const deleteTask = async (id: number) => {
-    try {
-      const stored = await AsyncStorage.getItem("tasks");
-      let tasks = stored ? JSON.parse(stored) : [];
-      const taskToDelete = tasks.find((t: TodoItem) => t.id === id);
-      tasks = tasks.filter((t: TodoItem) => t.id !== id);
-      await AsyncStorage.setItem("tasks", JSON.stringify(tasks));
-      setDocument(tasks);
-      if (taskToDelete) {
-        setLastDeleted(taskToDelete);
-      }
-    } catch (e) {
-      console.log("Delete error", e);
+  try {
+    const stored = await AsyncStorage.getItem("tasks");
+    const tasks: TodoItem[] = stored ? JSON.parse(stored) : [];
+    const taskToDelete = tasks.find((t) => t.id === id);
+
+    const updatedTasks = tasks.filter((t) => t.id !== id);
+    await AsyncStorage.setItem("tasks", JSON.stringify(updatedTasks));
+    setDocument(updatedTasks);
+
+    if (taskToDelete) {
+      setLastDeleted(taskToDelete);
     }
-  };
+  } catch (e) {
+    console.log("Delete error", e);
+  }
+};
 
   const handleUndo = async () => {
     if (lastDeleted) {
-      const updated = [...document, lastDeleted];
+      const updated = [lastDeleted, ...document];
+
       await AsyncStorage.setItem("tasks", JSON.stringify(updated));
       setDocument(updated);
 
-      setCheckedItems((prev) => {
-        const updatedChecked = { ...prev };
-        setTimeout(() => {
-          delete updatedChecked[lastDeleted.id];
-          
-        }, 3000);
+      setCheckedItems((prev) => ({
+        ...prev,
+        [lastDeleted.id]: false, 
+      }));
 
-        return updatedChecked;
-      });
+      
+      setTimeout(() => {
+        setCheckedItems((prev) => {
+          const updatedChecked = { ...prev };
+          delete updatedChecked[lastDeleted.id];
+          return updatedChecked;
+        });
+      }, 3000);
 
       setLastDeleted(null);
     }
   };
 
   const handleCheckChange = async (id: number, checked: boolean) => {
-    setCheckedItems((prev) => ({
-      ...prev,
-      [id]: checked,
-      
-    }));
-
-
     if (checked) {
-      setTimeout(() => {
-        deleteTask(id);
-        
-      }, 600);
+      setCheckedItems((prev) => ({
+        ...prev,
+        [id]: true,
+      }));
 
-      setTimeout(() => {
-        setCheckedItems((prev) => ({
-          ...prev,
-          [id]: false,
-         
-        }));
-      }, 3000);
+      const timeoutId = setTimeout(() => {
+        deleteTask(id);
+        setCheckedItems((prev) => {
+          const updated = { ...prev };
+          delete updated[id];
+          return updated;
+        });
+      }, 2000);
+
+      deleteTimeouts.current[id] = timeoutId;
+    } else {
+      
+      if (deleteTimeouts.current[id]) {
+        clearTimeout(deleteTimeouts.current[id]);
+        delete deleteTimeouts.current[id];
+      }
+
+      setCheckedItems((prev) => ({
+        ...prev,
+        [id]: false,
+      }));
     }
-    
   };
 
   useEffect(() => {
@@ -182,9 +205,7 @@ export default function Index() {
         setText={(value) => setTask(value)}
         onClick={() => saveTask()}
       />
-      {Object.values(checkedItems).some((value) => value) && (
-        <Undo onPress={handleUndo} />
-      )}
+      {lastDeleted && <Undo onPress={handleUndo} />}
     </SafeAreaView>
   );
 }
